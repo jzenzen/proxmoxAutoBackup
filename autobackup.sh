@@ -25,22 +25,29 @@
 #    under certain conditions.
 
 BACKUP_PATH=/backup/dump
-EXCLUDED_VM="106|108|112|104|107|110"
+INCLUDED_VM="*"
+EXCLUDED_VM="106|108|112"
 
 for vmpath in `ls -1 /etc/pve/nodes/*/qemu-server/* | grep -v -E $EXCLUDED_VM | sed -e "s/^\s*//g" | sed -e "s/\s.*//g"`
 do
-    export vm=`echo $vmpath | sed -e "s/.*qemu-server\///g" | sed -e "s/.conf//g"`
-    export vmbackupPath=$BACKUP_PATH/vzdump-qemu-$vm-`date +%Y_%m_%d_%H_%M`
-    export vmconf=$vmbackupPath/qemu-server.conf
+    vm=`echo $vmpath | sed -e "s/.*qemu-server\///g" | sed -e "s/.conf//g"`
+    vmbackupPath=$BACKUP_PATH/vzdump-qemu-$vm-`date +%Y_%m_%d_%H_%M`
+    vmconf=$vmbackupPath/qemu-server.conf
     echo "Backup upp $vm"
     mkdir $vmbackupPath
     awk '1;/\[autosnap/{exit}' $vmpath | grep -v "\[autosnap" > $vmconf
-    for scsi in `grep -v "backup=0" $vmconf | grep "^scsi[0-9]" | sed -e "s/^scsi//g" | sed -e "s/:.*//g"`
+    disks=`grep -v "backup=0" $vmconf | grep "^scsi[0-9]" | sed -e "s/^scsi//g" | sed -e "s/:.*//g"`
+    echo "$disks"
+    for scsi in $disks
     do
-    	export disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi.*ceph/ceph/g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
+    	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi.*ceph/ceph/g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
 	rbd snap create $disk@autobackup
-	qemu-img convert -f raw rbd:$disk@autobackup -O raw $vmbackupPath/disk-drive-scsi$scsi.raw
-    	echo "#qmdump#map:scsi$scsi:drive-scsi$scsi:ceph_vm::" >> $vmconf
+    done
+    for scsi in $disks
+    do
+    	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi.*ceph/ceph/g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
+	qemu-img convert -f raw rbd:$disk@autobackup -O raw $vmbackupPath/disk$scsi.raw
+    	echo "#qmdump#map:scsi$scsi:disk$scsi:ceph_vm::" >> $vmconf
 	rbd snap rm $disk@autobackup
     done
 done
