@@ -28,6 +28,8 @@ BACKUP_PATH=/backup/dump
 INCLUDED_VM="*"
 EXCLUDED_VM="106|108|112"
 
+echo "Autobackup started `date`"
+
 for vmpath in `ls -1 /etc/pve/nodes/*/qemu-server/* | grep -v -E $EXCLUDED_VM | sed -e "s/^\s*//g" | sed -e "s/\s.*//g"`
 do
     vm=`echo $vmpath | sed -e "s/.*qemu-server\///g" | sed -e "s/.conf//g"`
@@ -37,7 +39,6 @@ do
     mkdir $vmbackupPath
     awk '1;/\[autosnap/{exit}' $vmpath | grep -v "\[autosnap" > $vmconf
     disks=`grep -v "backup=0" $vmconf | grep "^scsi[0-9]" | sed -e "s/^scsi//g" | sed -e "s/:.*//g"`
-    echo "$disks"
     for scsi in $disks
     do
     	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi.*ceph/ceph/g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
@@ -51,4 +52,6 @@ do
 	rbd snap rm $disk@autobackup
     done
 done
+
+echo "Autobackup ended `date`"
 
