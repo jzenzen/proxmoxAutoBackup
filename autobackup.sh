@@ -41,12 +41,12 @@ do
     disks=`grep -v "backup=0" $vmconf | grep "^scsi[0-9]" | sed -e "s/^scsi//g" | sed -e "s/:.*//g"`
     for scsi in $disks
     do
-    	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi.*ceph/ceph/g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
+    	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi[0-9]: //g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
 	rbd snap create $disk@autobackup
     done
     for scsi in $disks
     do
-    	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi.*ceph/ceph/g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
+    	disk=`grep "^scsi$scsi" $vmconf | sed -e "s/^scsi[0-9]: //g" | sed -e "s/,.*//g" | sed -e "s/base.*\///g" | sed -e "s/:/\//g"`
 	qemu-img convert -f raw rbd:$disk@autobackup -O raw $vmbackupPath/disk$scsi.raw
     	echo "#qmdump#map:scsi$scsi:disk$scsi:ceph_vm::" >> $vmconf
 	rbd snap rm $disk@autobackup
