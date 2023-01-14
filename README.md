@@ -14,6 +14,7 @@ The main idea is to store all data in a format that can easilly be converted to 
 zpool create backup raidz2 sda sdb sdc sdd
 zfs set compression=zstd-1 backup
 zfs set dedup=on backup
+zpool set autotrim=on backup
 ```
 
 ## Check ZFS status
