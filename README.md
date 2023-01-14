@@ -9,6 +9,17 @@ These scripts are currently not adapted for publication, and are in this version
 
 The main idea is to store all data in a format that can easilly be converted to proxmox backup vma format. Since VMA isn't suitable for differential backups the actual storage will be done in raw-format. This might seem strange, but when combined with an underlaying filesystem of zfs with compression and deduplication the combination gives us all benefits of a normal backup system with diff backups and compression, but without all the extra fuzz. Also if deployed on Raid-Z2 we will have good data integrity to avoid problems.
 
+## Create ZFS
+```
+zpool create backup raidz2 sda sdb sdc sdd
+zfs set compression=zstd-1 backup
+```
+
+##Check ZFS status
+```
+zfs get compressratio backup
+```
+
 ## Restore
 To restore with the normal features within Proxmox it is easiest to first create a VMA. This is easy but not fast if it is a large VM. For larger VMs it can be convienient to soft copy the disk and use it directly. This means a restore in a couple of minutes instead of hours.
 
@@ -33,3 +44,6 @@ qm rescan
 mv /backup/dump/vzdump-qemu-100-2022_06_03_17_02/disk0.raw /backup/images/100/.
 qm rescan
 ```
+
+## Destroy ZFS
+zpool destroy backup
